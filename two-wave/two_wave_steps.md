@@ -2,7 +2,7 @@
 
 Plan for implementation of the two-wave RPS algorithm. First constructing simulation. Best if modular so can extend to multi-wave and other.
 
-### (Done) Step 1: Problem setup for simulation
+### (DONE) Step 1: Problem setup for simulation
 
 _See lattice.py and underlying_causal.py for completed code_
 
@@ -14,7 +14,8 @@ _See lattice.py and underlying_causal.py for completed code_
   * Define a mechanistic causal function
   * Compute true treatment effects $\beta_v = \phi(v)$
 
-### Step 2: First-wave allocation
+### (DONE) Step 2: First-wave allocation
+_See first_wave_allocation.py for completed code_
 
 * **Goal**: Allocate $n_1$ samples proportionally to boundary likelihood
 * **Equation**:
@@ -25,13 +26,16 @@ _See lattice.py and underlying_causal.py for completed code_
   * Compute $P(v \in \partial \Pi | H)$ for all $v \in \Lambda$
   * Normalize to get allocation $n_1(v)$ over lattice
 
-### Step 3: First-wave simulation
+### (DONE) Step 3: First-wave simulation
+_See first_wave_simulation.py for completed code_
 
 * **Goal**: Generate first-wave observations
 * **Tasks**:
 
   * Use $n_1(v)$ to simulate $y \sim \mathcal{N}(\beta_v, \sigma^2)$
   * Construct design matrix $D$ and outcome vector $y$
+
+### (DONE) Step 3.5: Test previous modules
 
 ### Step 4: Construct RPS
 
