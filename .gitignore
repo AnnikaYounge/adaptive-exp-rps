@@ -1,0 +1,10 @@
+# Virtual environment
+.venv/
+
+# PyCharm IDE
+.idea/
+*.iml
+
+# Local files
+workflow.md
+install_rashomon/
