@@ -1,6 +1,6 @@
 import numpy as np
 
-def boundary_prob(v, R, H: int) -> float:
+def boundary_prob_start(v, R, H: int) -> float:
     """
     Compute P(on boundary | H) for a given policy vector v.
 
@@ -29,7 +29,7 @@ def boundary_prob(v, R, H: int) -> float:
     return 1 - term
 
 
-def compute_boundary_probs(policies: list, R, H: int) -> np.ndarray:
+def compute_boundary_probs(policies: list, R, H: int, type = "start") -> np.ndarray:
     """
     Compute boundary probabilities for each policy
 
@@ -45,7 +45,10 @@ def compute_boundary_probs(policies: list, R, H: int) -> np.ndarray:
     probs = np.zeros(K, dtype=float)
     for idx in range(K):
         v = policies[idx]
-        probs[idx] = boundary_prob(v, R, H)
+        if type == "rps":
+            pass
+        else:
+            probs[idx] = boundary_prob_start(v, R, H)
     return probs
 
 
@@ -83,7 +86,7 @@ def allocate_wave(boundary_probs: np.ndarray, n1: int) -> np.ndarray:
     return n1_alloc
 
 
-def assign_first_wave_treatments(n_alloc: np.ndarray) -> np.ndarray:
+def assign_treatments(n_alloc: np.ndarray) -> np.ndarray:
     """
     Given an allocation array n_alloc of length K (n_alloc[i] = # draws at policy i),
     create a np.array D of policy‐indices
