@@ -93,7 +93,6 @@ def assign_first_wave_treatments(n_alloc: np.ndarray) -> np.ndarray:
 
     Returns:
       D (np.ndarray): Each policy index repeated n_alloc[i] times.
-      TODO check if speed improvements and if need type casting
     """
     total = int(n_alloc.sum())
     D = np.zeros(total, dtype=int)
