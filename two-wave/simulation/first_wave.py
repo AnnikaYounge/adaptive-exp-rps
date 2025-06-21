@@ -49,7 +49,7 @@ def compute_boundary_probs(policies: list, R, H: int) -> np.ndarray:
     return probs
 
 
-def allocate_first_wave(boundary_probs: np.ndarray, n1: int) -> np.ndarray:
+def allocate_wave(boundary_probs: np.ndarray, n1: int) -> np.ndarray:
     """
     Allocate the first‐wave sample counts n1(v) across all policies
 

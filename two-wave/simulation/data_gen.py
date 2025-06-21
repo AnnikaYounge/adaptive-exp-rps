@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_beta_underlying_causal(policies, M, R, kind="bump_sin", sigma=0.2):
+def get_beta_underlying_causal(policies, M, R, kind="poly", sigma=0.2):
     """
     Returns a vector beta of treatment effects for each policy in the lattice.
     The function used depends on the 'kind' argument.
@@ -34,7 +34,7 @@ def get_beta_underlying_causal(policies, M, R, kind="bump_sin", sigma=0.2):
         # beta(x) = sum of x_m squared over m
         beta = np.sum(X**2, axis=1)
 
-    elif kind == "linear_only":
+    elif kind == "linear_only": # FOR CHECKING, NOT FOR VALIDITY
         # beta(x) = sum of a_m * x_m over m, with a_m = 1 by default
         a = np.ones(M)
         beta = X.dot(a)
