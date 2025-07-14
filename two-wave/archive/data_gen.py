@@ -1,20 +1,6 @@
 import numpy as np
 
 def get_beta_underlying_causal(policies, M, R, kind="poly", sigma=0.2):
-    """
-    Returns a vector beta of treatment effects for each policy in the lattice.
-    The function used depends on the 'kind' argument.
-
-    Args:
-      policies (list of tuples): Each policy is a tuple of feature values.
-      M (int): Number of features.
-      R (int or list[int]): Number of levels per feature.
-      kind (str): Which function to use for beta.
-      sigma (float): Used for Gaussian-based functions.
-
-    Returns:
-      beta (np.ndarray): True outcomes for each policy.
-    """
 
     # Make R an array of length M
     if isinstance(R, int):
@@ -53,16 +39,6 @@ def get_beta_underlying_causal(policies, M, R, kind="poly", sigma=0.2):
         for i in range(M - 1):
             beta += 0.7 * X[:, i] * X[:, i+1]
 
-    elif kind == "quadratic_form":
-        # beta(x) = x^T Q x + c^T x
-        # c_m = 1 for all m, Q has diagonal 1 and off-diagonal 0.5 for neighbors
-        c = np.ones(M)
-        beta = X.dot(c)
-        squared = np.sum(X**2, axis=1)
-        beta += squared
-        for i in range(M - 1):
-            beta += 1.0 * X[:, i] * X[:, i+1]
-
     elif kind == "gauss_sin":
         # beta(x) = exp(-||x-0.5||^2/(2*sigma^2)) * product of sin(pi * x_m) over m
         diff = X - 0.5
@@ -76,10 +52,6 @@ def get_beta_underlying_causal(policies, M, R, kind="poly", sigma=0.2):
         diff = X - 0.5
         sqnorm = np.sum(diff**2, axis=1)
         beta = np.exp(-sqnorm / (2 * sigma**2))
-
-    elif kind == "sin_prod":
-        # beta(x) = product of sin(pi * x_m) over m
-        beta = np.prod(np.sin(np.pi * X), axis=1)
 
     elif kind == "rbf_mixture":
         # beta(x) = sum over k of w_k * exp(-||x-mu_k||^2/(2*rho^2))

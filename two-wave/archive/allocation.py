@@ -1,17 +1,6 @@
 import numpy as np
 
 def boundary_prob_start(v, R, H: int) -> float:
-    """
-    Compute P(on boundary | H) for a given policy vector p.
-
-    Args:
-        v (tuple or np.ndarray): length‐M tuple (or array) of ints in [0, R_i-1]
-        R (int or list/array): number of levels per feature; if int, same R for all M
-        H (int): sparsity parameter
-
-    Returns:
-        float: boundary probability for node v
-    """
     # Ensure R_arr is an array of length M
     M = len(v)
     if np.isscalar(R):
@@ -23,24 +12,13 @@ def boundary_prob_start(v, R, H: int) -> float:
     # from formula in paper
     term = 1.0
     for i in range(M):
-        R_i = R_arr[i] # TODO check if need type casting for int64
+        R_i = R_arr[i]
         ratio = 2 * min(int(v[i]), R_i - 1 - int(v[i])) / (R_i - 1)
         term *= (1 - ratio) ** (H - 1)
     return 1 - term
 
 
 def compute_initial_boundary_probs(policies: list, R, H: int) -> np.ndarray:
-    """
-    Compute boundary probabilities for each policy
-
-    Args:
-        policies (list): list (length K) of tuples (length M)
-        R (int or list/array): number of levels per feature; if int, same R for all M
-        H (int): sparsity parameter
-
-    Returns:
-        np.ndarray: length‐K array of probabilities for each policy index v
-    """
     K = len(policies)
     probs = np.zeros(K, dtype=float)
     for idx in range(K):
@@ -108,16 +86,6 @@ def compute_wave_boundary_probs(R_set, R_profiles, policies, profiles, profile_t
 
 
 def allocate_wave(boundary_probs: np.ndarray, n1: int) -> np.ndarray:
-    """
-    Allocate the first‐wave sample counts n1(v) across all policies
-
-    Args:
-        boundary_probs (np.ndarray): length‐K array of boundary probabilities
-        n1 (int): total first‐wave sample size
-
-    Returns:
-        np.ndarray: length‐K array of integer allocation n1[i] for each policy i
-    """
     # normalize to get weights, keep proportional to boundary probabilities
     total_prob = boundary_probs.sum()
     if total_prob == 0:
@@ -142,16 +110,6 @@ def allocate_wave(boundary_probs: np.ndarray, n1: int) -> np.ndarray:
 
 
 def assign_treatments(n_alloc: np.ndarray) -> np.ndarray:
-    """
-    Given an allocation array n_alloc of length K (n_alloc[i] = # allocated to policy i),
-    create a np.array D of policy‐indices
-
-    Args:
-      n_alloc (np.ndarray): Integer array of length K summing to n_total.
-
-    Returns:
-      D (np.ndarray): Each policy index repeated n_alloc[i] times.
-    """
     total = int(n_alloc.sum())
     D = np.zeros(total, dtype=int)
     pos = 0
