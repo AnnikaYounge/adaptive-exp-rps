@@ -2,89 +2,66 @@ import numpy as np
 
 # causal function registry
 
-def phi_linear(policy, alpha=1.0, beta=0.0):
-    x = np.array(policy)
-    return alpha * np.sum(x) + beta
-
-def phi_quadratic(policy, w=None):
-    x = np.array(policy)
-    if w is None:
-        w = np.ones_like(x)
-    return np.sum(w * x**2)
-
 def phi_basic(policy):
     x = np.array(policy)
     return 2 * x[0] + 0.5 * x[1]**2 + x[0]*x[2] + 0.2 * x[1] * x[2] + 0.5*x[1]*x[3]
 
+def phi_linear_interact(policy, R, shift=0.0):
+    x = np.array(policy) / (np.array(R) - 1)
+    lin = np.dot(x, np.linspace(1, 2, len(x)))  # increasing weights
+    pairwise = sum(x[i]*x[i+1] for i in range(len(x)-1))
+    return lin + 0.3 * pairwise + shift
+
+def phi_peak(policy, R, center=None, w_scale=1.0):
+    x = np.array(policy) / (np.array(R) - 1)
+    M = len(x)
+    if center is None:
+        center = np.ones(M) * 0.5  # center in [0,1]^M
+    w = np.linspace(1, 2, M) * w_scale
+    value = -np.sum(w * (x - center)**2)  # peak at center
+    return float(value)
+
+def phi_grouped_smooth2(policy, R):
+    x = np.array(policy) / (np.array(R) - 1)
+    centers = [np.full_like(x, val) for val in [0.2, 0.5, 0.8]]
+    weights = [1.0, 3.0, 5.0]
+    sharpness = 0.5
+
+    group_vals = [
+        w * np.exp(-np.sum((x - c)**2) / sharpness)
+        for c, w in zip(centers, weights)
+    ]
+    lin = np.dot(x, np.linspace(0.2, 1.0, len(x)))
+
+    return sum(group_vals) + 0.3 * lin
+
+def phi_grouped_coarse(policy, R, freq=2.0, sharpness=0.15):
+    x = np.array(policy) / (np.array(R) - 1)
+    x_mean = np.mean(x)
+    x_sum = np.sum(x)
+
+    # Broad sinusoidal ridges across average and total activation
+    ridge = np.sin(freq * np.pi * x_mean) + np.cos(freq * np.pi * x_sum / len(x))
+
+    # Smooth global interaction bump (moderately centered)
+    bump = np.exp(-np.sum((x - 0.5)**2) / sharpness)
+
+    return 2.0 + ridge + 2.0 * bump
+
+def phi_grouped_smooth(policy, R, shift=0.0):
+    x = np.array(policy) / (np.array(R) - 1)  # normalize to [0, 1]
+    centers = [
+        np.full_like(x, 0.2),
+        np.full_like(x, 0.5),
+        np.full_like(x, 0.8),
+    ]
+    values = [np.exp(-np.sum((x - c)**2) / 0.05) for c in centers]
+    interact = sum(x[i]*x[i+1] for i in range(len(x)-1))
+    return 1.0 + 2.0 * max(values) + 0.3 * interact + shift
+
 def phi_5d(policy):
     x = np.array(policy)
     return 2 * x[0] + 0.5 * x[1]**2 + x[0]*x[2] + 0.2 * x[1] * x[2] + 0.5*x[1]*x[3] + 0.1 * x[4]**2 + x[4]*x[0]
-
-def phi_graded_sum(policy, scale=1.0):
-    """Smoothly increasing outcome, diminishing returns (e.g. logistic growth)."""
-    x = np.array(policy)
-    s = np.sum(x)
-    return scale * (s / (1 + 0.5 * s))
-
-def phi_linear_combo(policy, weights=None, bias=10.0):
-    """
-    Weighted additive function with optional bias.
-    Produces moderate variation, generalizes to arbitrary dimensions.
-    """
-    x = np.array(policy)
-    if weights is None:
-        weights = np.linspace(1.0, 2.0, num=len(x))  # increasing weights
-    return float(np.dot(x, weights)) + bias
-
-def phi_graded_sum(policy, scale=20.0):
-    """
-    Smooth growth with diminishing returns.
-    Suitable for moderate pooled variation across profiles.
-    """
-    x = np.array(policy)
-    s = np.sum(x)
-    return scale * s / (1 + 0.3 * s)
-
-def phi_profile_bucket(policy, bins=None):
-    """
-    Discontinuous grouping based on profile structure.
-    Groups are controlled by number of active features.
-    """
-    profile = (np.array(policy) > 0).astype(int)
-    active = np.sum(profile)
-    if bins is None:
-        bins = {0: 10, 1: 30, 2: 60, 3: 90, 4: 100}
-    return bins.get(active, 0)
-
-def phi_blended(policy, w=None):
-    """
-    Blended function with both linear and nonlinear terms.
-    Designed to be smooth with meaningful heterogeneity.
-    """
-    x = np.array(policy)
-    if w is None:
-        w = np.linspace(0.5, 1.5, len(x))
-    lin = np.dot(x, w)
-    quad = np.sum((x - 2) ** 2)
-    return 80 - 5 * quad + lin  # centered around 80, penalizes being far from (2,2,...)
-
-# --- Registry ---
-PHI_REGISTRY = {
-    "linear": phi_linear,
-    "quadratic": phi_quadratic,
-    "linear_combo": phi_linear_combo,
-    "graded_sum": phi_graded_sum,
-    "profile_bucket": phi_profile_bucket,
-    "blended": phi_blended,
-    "basic": phi_basic
-}
-
-def get_phi_function(name, **kwargs):
-    base_fn = PHI_REGISTRY.get(name)
-    if base_fn is None:
-        raise ValueError(f"Unknown causal function: {name}")
-    return lambda policy: base_fn(policy, **kwargs)
-
 
 
 def generate_data_from_assignments(D, all_policies, oracle_outcomes, sig=1.0):
