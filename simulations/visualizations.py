@@ -205,6 +205,105 @@ def plot_minimax_risk_matrix(profile_losses, map_idx=None):
     plt.tight_layout()
     plt.show()
 
+
+# ---- helper (same proxy you’re using in the notebook logic) ----
+def _pool_se_proxy(members, policy_sigmas, policy_counts, weights=None):
+    members = np.asarray(members, dtype=int)
+    s = np.asarray(policy_sigmas, dtype=float)[members]
+    n = np.maximum(np.asarray(policy_counts, dtype=float)[members], 1.0)
+    if weights is None:
+        w = np.full(len(members), 1.0/len(members))
+    else:
+        w = np.asarray(weights, dtype=float)
+        w = w / (w.sum() + 1e-12)
+    var_g = np.sum((w**2) * (s**2) / n)
+    return float(np.sqrt(max(var_g, 1e-12)))
+
+# 1) Pool sizes (bar)
+def plot_pool_size_bar(pool_to_policies, sort=True):
+    df = pd.DataFrame({
+        "Pool": list(pool_to_policies.keys()),
+        "Size": [len(v) for v in pool_to_policies.values()]
+    })
+    if sort:
+        df = df.sort_values("Size", ascending=False).reset_index(drop=True)
+
+    plt.figure(figsize=(10, 3.5))
+    ax = sns.barplot(data=df, x="Pool", y="Size", color="steelblue", edgecolor="black")
+    ax.set_title("Pool sizes (# policies)")
+    ax.set_xlabel("Pool id")
+    ax.set_ylabel("# policies")
+    plt.tight_layout()
+    plt.show()
+    return df
+
+# 2) Pool SE proxy (bar)
+def plot_pool_se_bar(pool_to_policies, policy_sigmas, policy_counts, pool_weights=None, sort=True):
+    rows = []
+    for g, members in pool_to_policies.items():
+        w = None if (pool_weights is None or g not in pool_weights) else pool_weights[g]
+        se = _pool_se_proxy(members, policy_sigmas, policy_counts, weights=w)
+        rows.append({"Pool": g, "SE_proxy": se, "Size": len(members)})
+
+    df = pd.DataFrame(rows)
+    # ---- minimal guard: only keep finite SEs
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["SE_proxy"])
+
+    if sort:
+        df = df.sort_values("SE_proxy", ascending=False).reset_index(drop=True)
+
+    if df.empty:
+        print("plot_pool_se_bar: nothing finite to plot yet.")
+        return df
+
+    plt.figure(figsize=(10, 3.5))
+    ax = sns.barplot(data=df, x="Pool", y="SE_proxy",
+                     color="slateblue", edgecolor="black")
+    ax.set_title(r"Per-pool SE proxy ( $\sqrt{\sum w_i^2 \sigma_i^2 / n_i}$ )")
+    ax.set_xlabel("Pool id")
+    ax.set_ylabel("SE proxy")
+    plt.tight_layout()
+    plt.show()
+    return df
+
+# 3) Pool mean vs SE proxy (scatter)
+def plot_pool_mean_vs_se(pool_means, pool_to_policies, policy_sigmas, policy_counts, pool_weights=None):
+    rows = []
+    for g, members in pool_to_policies.items():
+        w = None if (pool_weights is None or g not in pool_weights) else pool_weights[g]
+        se = _pool_se_proxy(members, policy_sigmas, policy_counts, weights=w)
+        rows.append({"Pool": g, "Mean": float(pool_means[g]), "SE_proxy": se, "Size": len(members)})
+
+    df = pd.DataFrame(rows)
+    # ---- minimal guard: only finite pairs get plotted/annotated
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["SE_proxy", "Mean"])
+
+    if df.empty:
+        print("plot_pool_mean_vs_se: nothing finite to plot yet.")
+        return df
+
+    plt.figure(figsize=(5.2, 4.2))
+    ax = sns.scatterplot(
+        data=df, x="SE_proxy", y="Mean",
+        size="Size", sizes=(30, 160),
+        hue="Size", palette="viridis", edgecolor="black", legend=True
+    )
+    for _, r in df.iterrows():
+        ax.text(r["SE_proxy"], r["Mean"], str(int(r["Pool"])), fontsize=8,
+                ha="left", va="center")
+    ax.set_xlabel("Pool SE proxy")
+    ax.set_ylabel("Pool mean")
+    ax.set_title("Pool mean vs SE proxy")
+
+    # only draw legend if seaborn created one (avoids the 'No artists' warning)
+    leg = ax.get_legend()
+    if leg is not None:
+        leg.set_title("Pool size")
+
+    plt.tight_layout()
+    plt.show()
+    return df
+
 # ---- extra
 from sklearn.decomposition import PCA
 
